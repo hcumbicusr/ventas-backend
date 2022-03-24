@@ -1,0 +1,13 @@
+version: "3"
+services:
+  web:
+    container_name: ventas-backend
+    restart: always
+    build:
+      context: .
+    env_file: .env
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - "8080:3000"
