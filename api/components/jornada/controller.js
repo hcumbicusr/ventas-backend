@@ -1,4 +1,4 @@
-const TABLA = 'post';
+const TABLA = 'jornada';
 
 module.exports = function(injectedStore) {
     let store = injectedStore;

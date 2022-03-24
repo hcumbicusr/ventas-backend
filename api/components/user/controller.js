@@ -14,11 +14,10 @@ module.exports = function(injectedStore) {
 
     async function list() {
         users = await store.list(TABLA);
-        cache.upsert(TABLA, users);
         return users;
     }
-    function get(id) {
-        return store.get(TABLA, id);
+    async function get(id) {
+        return await store.get(TABLA, id);
     }
     async function insert(body) {
         const user = {
@@ -55,7 +54,7 @@ module.exports = function(injectedStore) {
 
         if ( body.id ) user.id = body.id;
 
-        // await store.update(TABLA, user);
+        await store.update(TABLA, user);
 
         if (body.password || body.username) {
             auth_user = {user_id: user.id};
@@ -68,26 +67,10 @@ module.exports = function(injectedStore) {
         return user;
     }
 
-    async function follow(from, to) {
-        return store.upsert(TABLA + '_follow',{
-            user_from: from,
-            user_to: to,
-        })
-    }
-
-    async function following(user) {
-        const join = {};
-        join[TABLA] = 'user_to'; // {user: 'user_to}
-        const query = {user_from: user};
-        return store.query(TABLA + '_follow', query, join);
-    }
-
     return {
         list,
         get,
         insert,
         update,
-        follow,
-        following,
     };
 }

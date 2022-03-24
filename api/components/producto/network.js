@@ -8,7 +8,7 @@ const router = express.Router();
 // Routes
 router.get('/', list);
 router.get('/:id', get);
-router.post('/', insert);
+router.post('/', secure('create'), insert);
 router.put('/', secure('update'), update);
 
 // Internal functions
@@ -49,6 +49,22 @@ async function update(req, res, next) {
     } catch (error) {
         next(error);
     }
+}
+
+async function follow(req, res, next) {
+    Controller.follow(req.user.id, req.params.id)
+        .then(data => {
+            response.success(req, res, data, 201);
+        })
+        .catch(next);
+}
+
+async function following(req, res, next) {
+    Controller.following(req.params.id)
+        .then(data => {
+            response.success(req, res, data, 200);
+        })
+        .catch(next);
 }
 
 module.exports = router;

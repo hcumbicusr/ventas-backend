@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50731
 File Encoding         : 65001
 
-Date: 2022-03-20 22:32:49
+Date: 2022-03-21 11:58:53
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -106,11 +106,11 @@ INSERT INTO `api_rutas` VALUES ('4', '/venta');
 -- ----------------------------
 DROP TABLE IF EXISTS `auth`;
 CREATE TABLE `auth` (
-  `user_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `user_id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
   `username` varchar(50) COLLATE utf8_unicode_ci NOT NULL,
   `rol` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
   `password` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `user_id` (`user_id`) USING BTREE,
   KEY `rol` (`rol`),
   CONSTRAINT `auth_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `auth_ibfk_2` FOREIGN KEY (`rol`) REFERENCES `api_roles` (`rol`) ON DELETE CASCADE ON UPDATE CASCADE
@@ -119,6 +119,7 @@ CREATE TABLE `auth` (
 -- ----------------------------
 -- Records of auth
 -- ----------------------------
+INSERT INTO `auth` VALUES ('85rulh8MWwMs3oMcVT6M8', 'admin', 'Administrador', '$2b$05$d9mb2mNZLd5PPEWqUyuIEOlq8cduYui3fFDgRd3PpVb11dGDTVlCi');
 
 -- ----------------------------
 -- Table structure for cajas
@@ -144,7 +145,7 @@ INSERT INTO `cajas` VALUES ('1', 'Caja 1', '1', '1');
 -- ----------------------------
 DROP TABLE IF EXISTS `clientes`;
 CREATE TABLE `clientes` (
-  `id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `nombre` varchar(150) COLLATE utf8_unicode_ci NOT NULL,
   `tipo_documento` varchar(50) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'DNI',
   `numero_documento` varchar(20) COLLATE utf8_unicode_ci NOT NULL DEFAULT '00000000',
@@ -225,7 +226,7 @@ CREATE TABLE `jornada_detalle` (
 -- ----------------------------
 DROP TABLE IF EXISTS `productos`;
 CREATE TABLE `productos` (
-  `id` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `codigo` varchar(20) COLLATE utf8_unicode_ci DEFAULT NULL,
   `serie` varchar(30) COLLATE utf8_unicode_ci DEFAULT NULL,
   `nombre` varchar(150) COLLATE utf8_unicode_ci NOT NULL,
@@ -293,12 +294,16 @@ CREATE TABLE `users` (
   `email` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
   `phone` varchar(20) COLLATE utf8_unicode_ci DEFAULT NULL,
   `active` int(11) NOT NULL DEFAULT '1',
-  PRIMARY KEY (`id`)
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ----------------------------
 -- Records of users
 -- ----------------------------
+INSERT INTO `users` VALUES ('85rulh8MWwMs3oMcVT6M8', 'admin', 'admin', 'Administrador', '', '', '1', '2022-03-21 16:53:44', null);
 
 -- ----------------------------
 -- Table structure for venta
@@ -314,7 +319,7 @@ CREATE TABLE `venta` (
   `igv_monto` decimal(10,4) NOT NULL,
   `total_con_igv` decimal(10,4) NOT NULL,
   `tipo_pago` varchar(50) NOT NULL,
-  `cliente_id` int(11) NOT NULL,
+  `cliente_id` int(11) unsigned NOT NULL,
   `sucursal_id` int(11) unsigned NOT NULL,
   `fecha_hora_inicio` datetime DEFAULT NULL,
   `fecha_hora_fin` datetime DEFAULT NULL,
@@ -330,8 +335,10 @@ CREATE TABLE `venta` (
   PRIMARY KEY (`id`),
   KEY `sucursal_id` (`sucursal_id`),
   KEY `tipo_comprobante_id` (`tipo_comprobante_id`),
+  KEY `cliente_id` (`cliente_id`),
   CONSTRAINT `venta_ibfk_1` FOREIGN KEY (`sucursal_id`) REFERENCES `sucursal` (`id`),
-  CONSTRAINT `venta_ibfk_2` FOREIGN KEY (`tipo_comprobante_id`) REFERENCES `tipo_comprobante` (`id`)
+  CONSTRAINT `venta_ibfk_2` FOREIGN KEY (`tipo_comprobante_id`) REFERENCES `tipo_comprobante` (`id`),
+  CONSTRAINT `venta_ibfk_3` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
@@ -345,7 +352,7 @@ DROP TABLE IF EXISTS `venta_detalle`;
 CREATE TABLE `venta_detalle` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `venta_id` int(11) unsigned NOT NULL,
-  `producto_id` varchar(32) NOT NULL,
+  `producto_id` int(11) unsigned NOT NULL,
   `cantidad` decimal(10,4) NOT NULL,
   `precio_con_igv` decimal(10,4) NOT NULL,
   `precio_sin_igv` decimal(10,4) NOT NULL,
@@ -358,7 +365,9 @@ CREATE TABLE `venta_detalle` (
   `oferta_id` varchar(32) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `venta_id` (`venta_id`),
-  CONSTRAINT `venta_detalle_ibfk_1` FOREIGN KEY (`venta_id`) REFERENCES `venta` (`id`)
+  KEY `producto_id` (`producto_id`),
+  CONSTRAINT `venta_detalle_ibfk_1` FOREIGN KEY (`venta_id`) REFERENCES `venta` (`id`),
+  CONSTRAINT `venta_detalle_ibfk_2` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------

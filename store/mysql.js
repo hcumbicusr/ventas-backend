@@ -49,13 +49,26 @@ function list(table) {
 
 function get(table, id) {
     return new Promise((resolve, reject) => {
-        connection.query(`SELECT * FROM ${table} WHERE id = ?`, [id], (err, data) => {
+        const q = connection.query(`SELECT * FROM ${table} WHERE id = ?`, [id], (err, data) => {
             if(err) return reject(err);
-
+            if ( data.length > 0 )  data = data[0];
             resolve(data);
-        })
+        });
+        // console.log("Query: ",q.sql);
     });
-} 
+}
+
+function remove(table, id) {
+    return new Promise((resolve, reject) => {
+        const q = connection.query(`DELETE FROM ${table} WHERE id = ?`, [id], (err, data) => {
+            if(err) return reject(err);
+            if ( data.length > 0 )  data = data[0];
+            resolve(data);
+        });
+        // console.log("Query: ",q.sql);
+    });
+}
+
 
 function insert(table, data) {
     return new Promise((resolve, reject) => {
@@ -66,10 +79,16 @@ function insert(table, data) {
         })
     });
 } 
-
+/**
+ * 
+ * @param {string} table 
+ * @param {object} data 
+ * @param {string} pk_field 
+ * @returns 
+ */
 function update(table, data, pk_field) {
     const pk = pk_field??'id';
-    console.log(table, pk, data);
+    // console.log(table, pk, data);
     return new Promise((resolve, reject) => {
         const q = connection.query(`UPDATE ${table} SET ? WHERE ${pk} = ?`, [data, data[pk]], (err, result) => {
             if(err) return reject(err);
@@ -79,22 +98,70 @@ function update(table, data, pk_field) {
         // console.log("Query: ",q.sql);
     });
 }
-
-function query(table, query, join) {
-    let joinQuery = '';
-    if (join) {
-        const key = Object.keys(join)[0];
-        const val = join[key];
-        joinQuery = `JOIN ${key} ON ${table}.${val} = ${key}.id`;
+/**
+ * 
+ * @param {string} table 
+ * @param {array|object} where 
+ * @param {object} join 
+ * @param {object} order 
+ * @param {int} limit 
+ * @param {array} columns 
+ * @param {object} between 
+ * @returns Promise
+ */
+function query(table, where, join, order, limit, columns, between) {
+    let whereQuery = '';
+    let whereArray = [];
+    // console.log(typeof where);
+    if ( Array.isArray(where) ) {
+       for(i in where) {
+            const clave = Object.keys(where[i])[0];
+            whereArray.push(`${connection.escapeId(clave)}=${connection.escape(where[i][clave])}`) ;
+        }
+        whereQuery = whereArray.join(' AND ');
+    } else if ( typeof where === 'object' && where != null) {
+        const clave = Object.keys(where)[0];
+        const valor = Object.values(where)[0];
+        whereQuery = `${connection.escapeId(clave)}=${connection.escape(valor)}`;
     }
 
+    let betweenQuery = '';
+    if ( typeof between === 'object' && between != null) {
+        betweenQuery = ` ${connection.escapeId(between.field)} BETWEEN ${connection.escape(between.start)} AND ${connection.escape(between.end)}`
+    }
+    whereQuery += betweenQuery;
+    
+    let joinQuery = '';
+    if (join) {
+        const table_join = Object.keys(join)[0];
+        const fk = Object.values(join)[0];
+        joinQuery = 'JOIN '+connection.escapeId(table_join)+' ON '+connection.escapeId(table+'.'+fk)+' = '+connection.escapeId(table_join+'.id');
+    }
+    let orderQuery = '';
+    let orderArray = [];
+    if ( Array.isArray(order) ) {
+        for(i in order) {
+            const clave = Object.keys(order[i])[0];
+            // console.log('order', order, i, clave, order[i][clave]);
+            orderArray.push(`${connection.escapeId(clave)} ${order[i][clave]}`);
+        }
+        orderQuery = `ORDER BY `+orderArray.join(",");
+    }
+    let limitQuery = '';
+    if (parseInt(limit) > 0) {
+        limitQuery = `LIMIT ${parseInt(limit)}`;
+    }
+
+    if ( !columns || columns.length == 0 ) columns = ['*'];
+
     return new Promise((resolve, reject) => {
-        connection.query(`SELECT * FROM ${table} ${joinQuery} WHERE ${table}.?`, query, (err, result) => {
+        const q = connection.query(`SELECT ${columns??'*'} FROM ${table} ${joinQuery} WHERE ${whereQuery} ${orderQuery} ${limitQuery}`, [columns], (err, result) => {
             if ( err ) return reject(err);
-            resolve(result[0] || null);
-        })
+            resolve(result);
+        });
+        console.log("Query: ",q.sql);
     });
-} 
+}
 
 module.exports = {
     list,
@@ -102,4 +169,5 @@ module.exports = {
     insert,
     update,
     query,
+    remove,
 }

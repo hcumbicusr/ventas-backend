@@ -3,11 +3,12 @@ const config = require('../config');
 const error = require('../utils/error');
 
 const secret = config.jwt.secret;
+const expiresIn = config.jwt.expiresIn;
 
 function sign(data) {
     let jsonData = JSON.parse(JSON.stringify(data));
-    console.log(jsonData);
-    return jwt.sign(jsonData, secret);
+    // console.log(jsonData);
+    return jwt.sign(jsonData, secret, {expiresIn: expiresIn});
 }
 
 function verify(token) {
